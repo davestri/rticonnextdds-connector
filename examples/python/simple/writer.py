@@ -19,5 +19,6 @@ for i in range(1,500):
 	output.instance.setNumber("shapesize", 30);
 	output.instance.setString("color", "BLUE");
 	output.write();
-	time.sleep(2)
-
+	time.sleep(2);
+	
+del connector;

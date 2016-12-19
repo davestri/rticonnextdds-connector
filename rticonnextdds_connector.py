@@ -1,5 +1,5 @@
 ##############################################################################
-#    (c) 2005-2015 Copyright, Real-Time Innovations, All rights reserved.    #
+#    (c) 2005-2016 Copyright, Real-Time Innovations, All rights reserved.    #
 #                                                                            #
 # RTI grants Licensee a license to use, modify, compile, and create          #
 # derivative works of the Software.  Licensee has the right to distribute    #
@@ -17,6 +17,10 @@ import sys
 import weakref
 import platform
 import json
+import itertools
+import enum
+
+print("Using Python %s.%s.%s" % sys.version_info[:3]);
 
 (bits, linkage)  = platform.architecture();
 osname = platform.system();
@@ -98,11 +102,14 @@ rtin_RTIDDSConnector_getReader.restype= ctypes.c_void_p
 rtin_RTIDDSConnector_getReader.argtypes=[ ctypes.c_void_p,ctypes.c_char_p ]
 
 rtin_RTIDDSConnector_setNumberIntoSamples = rti.RTIDDSConnector_setNumberIntoSamples
-rtin_RTIDDSConnector_setNumberIntoSamples.argtypes = [ctypes.c_void_p, ctypes.c_char_p,ctypes.c_char_p,ctypes.c_double]
+rtin_RTIDDSConnector_setNumberIntoSamples.argtypes = \
+	[ctypes.c_void_p, ctypes.c_char_p,ctypes.c_char_p,ctypes.c_double]
 rtin_RTIDDSConnector_setBooleanIntoSamples = rti.RTIDDSConnector_setBooleanIntoSamples
-rtin_RTIDDSConnector_setBooleanIntoSamples.argtypes = [ctypes.c_void_p, ctypes.c_char_p,ctypes.c_char_p,ctypes.c_int]
+rtin_RTIDDSConnector_setBooleanIntoSamples.argtypes = \
+	[ctypes.c_void_p, ctypes.c_char_p,ctypes.c_char_p,ctypes.c_int]
 rtin_RTIDDSConnector_setStringIntoSamples = rti.RTIDDSConnector_setStringIntoSamples
-rtin_RTIDDSConnector_setStringIntoSamples.argtypes = [ctypes.c_void_p, ctypes.c_char_p,ctypes.c_char_p,ctypes.c_char_p]
+rtin_RTIDDSConnector_setStringIntoSamples.argtypes = \
+	[ctypes.c_void_p, ctypes.c_char_p,ctypes.c_char_p,ctypes.c_char_p]
 
 rtin_RTIDDSConnector_write = rti.RTIDDSConnector_write
 rtin_RTIDDSConnector_write.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
@@ -120,13 +127,23 @@ rtin_RTIDDSConnector_getInfosLength = rti.RTIDDSConnector_getInfosLength
 rtin_RTIDDSConnector_getInfosLength.restype = ctypes.c_double
 rtin_RTIDDSConnector_getInfosLength.argtypes = [ctypes.c_void_p,ctypes.c_char_p]
 
-rtin_RTIDDSConnector_clear = rti.RTIDDSConnector_clear
-rtin_RTIDDSConnector_clear.argtypes = [ctypes.c_void_p,ctypes.c_char_p]
-
+rtin_RTIDDSConnector_getNumberFromInfos = rti.RTIDDSConnector_getNumberFromInfos
+rtin_RTIDDSConnector_getNumberFromInfos.restype = ctypes.c_double
+rtin_RTIDDSConnector_getNumberFromInfos.argtypes = \
+	[ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p]
 
 rtin_RTIDDSConnector_getBooleanFromInfos = rti.RTIDDSConnector_getBooleanFromInfos
 rtin_RTIDDSConnector_getBooleanFromInfos.restype  = ctypes.c_int
-rtin_RTIDDSConnector_getBooleanFromInfos.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p]
+rtin_RTIDDSConnector_getBooleanFromInfos.argtypes = \
+	[ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p]
+
+rtin_RTIDDSConnector_getStringFromInfos = rti.RTIDDSConnector_getStringFromInfos
+rtin_RTIDDSConnector_getStringFromInfos.restype = ctypes.c_char_p
+rtin_RTIDDSConnector_getStringFromInfos.argtypes = \
+	[ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p]
+
+rtin_RTIDDSConnector_clear = rti.RTIDDSConnector_clear
+rtin_RTIDDSConnector_clear.argtypes = [ctypes.c_void_p,ctypes.c_char_p]
 
 rtin_RTIDDSConnector_getSamplesLength = rti.RTIDDSConnector_getInfosLength
 rtin_RTIDDSConnector_getSamplesLength.restype = ctypes.c_double
@@ -134,28 +151,57 @@ rtin_RTIDDSConnector_getSamplesLength.argtypes = [ctypes.c_void_p,ctypes.c_char_
 
 rtin_RTIDDSConnector_getNumberFromSamples = rti.RTIDDSConnector_getNumberFromSamples
 rtin_RTIDDSConnector_getNumberFromSamples.restype = ctypes.c_double
-rtin_RTIDDSConnector_getNumberFromSamples.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p]
+rtin_RTIDDSConnector_getNumberFromSamples.argtypes = \
+	[ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p]
 
 rtin_RTIDDSConnector_getBooleanFromSamples = rti.RTIDDSConnector_getBooleanFromSamples
 rtin_RTIDDSConnector_getBooleanFromSamples.restype = ctypes.c_int
-rtin_RTIDDSConnector_getBooleanFromSamples.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p]
+rtin_RTIDDSConnector_getBooleanFromSamples.argtypes = \
+	[ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p]
 
 rtin_RTIDDSConnector_getStringFromSamples = rti.RTIDDSConnector_getStringFromSamples
 rtin_RTIDDSConnector_getStringFromSamples.restype = ctypes.c_char_p
-rtin_RTIDDSConnector_getStringFromSamples.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p]
+rtin_RTIDDSConnector_getStringFromSamples.argtypes = \
+	[ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p]
 
 rtin_RTIDDSConnector_getJSONSample = rti.RTIDDSConnector_getJSONSample
 rtin_RTIDDSConnector_getJSONSample.restype = ctypes.c_char_p
-rtin_RTIDDSConnector_getJSONSample.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int]
+rtin_RTIDDSConnector_getJSONSample.argtypes = \
+	[ctypes.c_void_p, ctypes.c_char_p, ctypes.c_int]
 
 rtin_RTIDDSConnector_setJSONInstance = rti.RTIDDSConnector_setJSONInstance
-rtin_RTIDDSConnector_setJSONInstance.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_char_p]
+rtin_RTIDDSConnector_setJSONInstance.argtypes = \
+	[ctypes.c_void_p, ctypes.c_char_p, ctypes.c_char_p]
 
 
 #Python Class Definition
 
+class ReturnCode(enum.Enum):
+	OK = 0
+	ERROR = 1
+	UNSUPPORTED = 2
+	BAD_PARAMETER = 3
+	PRECODITION_NOT_MET = 4
+	OUT_OF_RESOURCES = 5
+	NOT_ENABLED = 6
+	IMMUTABLE_POLICY = 7
+	INCONSISTENT_POLICY = 8
+	ALREADY_DELETED = 9
+	TIMEOUT = 10
+	NO_DATA = 11
+	ILLEGAL_OPERATION = 12
+
+class InstanceState(enum.Enum):
+	ALIVE = 0
+	NOT_ALIVE_NO_WRITERS = 1
+	NOT_ALAIVE_DISPOSED = 2
+
+class RTIConnectorError(Exception):
+	def __init__(self, retcode):
+		self.retcode = retcode
+
 class Samples:
-	def __init__(self,input):
+	def __init__(self, input):
 		self.input = input;
 
 	def getLength(self):
@@ -170,16 +216,25 @@ class Samples:
 	def getString(self, index, fieldName):
 		return fromcstring(rtin_RTIDDSConnector_getStringFromSamples(self.input.connector.native,tocstring(self.input.name),index,tocstring(fieldName)));
 
-	def getDictionary(self,index):
+	def getDictionary(self, index):
 		jsonStr = rtin_RTIDDSConnector_getJSONSample(self.input.connector.native,tocstring(self.input.name),index);
 		return json.loads(fromcstring(jsonStr))
 
 class Infos:
-	def __init__(self,input):
+	def __init__(self, input):
 		self.input = input;
 
 	def getLength(self):
 		return int(rtin_RTIDDSConnector_getInfosLength(self.input.connector.native,tocstring(self.input.name)));
+
+	def getNumber(self, index, fieldName):
+		return rtin_RTIDDSConnector_getNumberFromInfos(self.input.connector.native,tocstring(self.input.name),index,tocstring(fieldName));
+
+	def getBoolean(self, index, fieldName):
+		return rtin_RTIDDSConnector_getBooleanFromInfos(self.input.connector.native,tocstring(self.input.name),index,tocstring(fieldName));
+
+	def getString(self, index, fieldName):
+		return fromcstring(rtin_RTIDDSConnector_getStringFromInfos(self.input.connector.native,tocstring(self.input.name),index,tocstring(fieldName)));
 
 	def isValid(self, index):
 		return rtin_RTIDDSConnector_getBooleanFromInfos(self.input.connector.native,tocstring(self.input.name),index,tocstring('valid_data'));
@@ -200,7 +255,7 @@ class Input:
 	def take(self):
 		rtin_RTIDDSConnector_take(self.connector.native,tocstring(self.name));
 
-	def wait(self,timeout):
+	def wait(self, timeout):
 		return rtin_RTIDDSConnector_wait(self.connector.native,timeout);
 
 class Instance:
@@ -228,10 +283,9 @@ class Instance:
 			raise TypeError("field:{0} should be of type String"\
 				.format(fieldName))
 
-	def setDictionary(self,dictionary):
+	def setDictionary(self, dictionary):
 		jsonStr = json.dumps(dictionary)
 		rtin_RTIDDSConnector_setJSONInstance(self.output.connector.native,tocstring(self.output.name),tocstring(jsonStr));
-
 
 class Output:
 	def __init__(self, connector, name):
@@ -249,19 +303,63 @@ class Output:
 		return rtin_RTIDDSConnector_clear(self.connector.native,tocstring(self.name));
 
 class Connector:
-	def __init__(self, configName, fileName):
+	def __init__(self, configName, fileName, waitTimeout=None):
 		self.native = rtin_RTIDDSConnector_new(tocstring(configName), tocstring(fileName),None);
 		if self.native == None:
 			raise ValueError("Invalid participant profile, xml path or xml profile")
+		self.listeners = [];
+		if waitTimeout == None:
+			self.timeout = -1;
+		else:
+			self.timeout = waitTimeout;
+		self.on_data_available_run = False;
 
 	def delete(self):
 		rtin_RTIDDSConnector_delete(self.native);
 
 	def getOutput(self, outputName):
-		return Output(self,outputName);
+		return Output(self, outputName);
 
 	def getInput(self, inputName):
 		return Input(self, inputName);
 
+	def addListener(self, callback):
+		self.listeners.append(callback);
+		if self.on_data_available_run == False:
+			self.on_data_available_run = True;
+
+	def removeListener(self, callback):
+		if callback in self.listeners:
+			self.listeners.remove(callback);
+			self.on_data_available_run = False;
+
+	def notify(self):
+		for listener in self.listeners:
+			listener()
+
 	def wait(self,timeout):
 		return rtin_RTIDDSConnector_wait(self.native,timeout);
+
+	def onDataAvailable(self):
+		while self.on_data_available_run:
+			try:
+				#print("onDataAvaialble: calling connector_wait with timeout", self.timeout)
+				rc = self.wait(self.timeout);
+				#print("returned from connector_wait with retcode:", rc)
+				if rc == ReturnCode.OK.value:
+					self.notify()
+				elif rc == ReturnCode.TIMEOUT.value:
+					continue
+				else:
+					#unexpected Connext error
+					raise RTIConnectorError(rc)
+			except RTIConnectorError as rce:
+				print("Unexpected Connector error:", rce)
+				raise
+			except:
+				exc_type, exc_value, exc_traceback = sys.exc_info()
+				print("Unexpected error:", exc_type, exc_value)
+				break
+
+	def __del__(self):
+		print("deleting connector");
