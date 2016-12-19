@@ -8,7 +8,7 @@ If you still have trouble write on the [RTI Community Forum](https://community.r
 ### Available examples
 In this directory you can find 1 set of examples
 
- * **simple**: shows how to write samples and how to read/take
+ * **simple**: shows how to write samples and how to read/take, and how to use event based reading. Note that event based reading currently uses Python 3 features and does not work with Python 2.7.
 
 ### API Overview:
 #### require the connector library
@@ -98,7 +98,7 @@ input.read();
 
  or
 
-```pu
+```py
  input.take();
 ```
 
@@ -153,3 +153,41 @@ You can access the date by getting a copy in a dictionary object or you can acce
 ```
 
 The APIs to do that are only 3: `getNumber(indexm fieldName);` `getBoolean(index, fieldName);` and `getString(index, fieldName);`.
+
+
+### event based reading
+
+If you don't want to do polling, you can ask the connector to notify you when there are data available:
+
+First, define a callback function:
+
+```py
+def on_data_available(input):
+    print('on_data_available taking data ...')
+    input.take();
+    numOfSamples = input.samples.getLength();
+    print('on_data_available ' + repr(numOfSamples) + ' samples taken')
+    for j in range (1, numOfSamples+1):
+        if input.infos.isValid(j):
+            sample = input.samples.getDictionary(j); #this gives you a dictionary
+            x = sample['x']; #you can access the dictionary...
+            y = sample['y'];
+            size = input.samples.getNumber(j, "shapesize"); #or, if you need a single field, you can just access the field directly
+            color = input.samples.getString(j, "color");
+            print("Received:", repr(sample));
+```
+
+Then, register it with the Connector:
+
+```py
+connector.addListener(on_data_available, input);
+```
+
+Schedule it to run, for example with a ThreadPoolExecutor:
+
+```py
+futures = []
+with concurrent.futures.ThreadPoolExecutor(max_workers=2) as my_executor:
+    futures.append(
+        my_executor.submit(connector.onDataAvailable, 2000));
+```
